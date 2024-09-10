@@ -1,3 +1,8 @@
+# Specific to this project
+
+origin/
+destination/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
