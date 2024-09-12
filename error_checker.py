@@ -13,11 +13,14 @@ def _check_for_empty_directory(destination):
 
     if obj_count > 0:
         while True:
-            answer = str(input(f"Destination path [{destination}] is not empty. Continue? (y/n): "))
-            if answer.lower() == "y":
-                break
-            elif answer.lower() == "n":
-                sys.exit("Aborting.")
+            try:
+                answer = str(input(f"Destination path [{destination}] is not empty. Continue? (y/n): "))
+                if answer.lower() == "y":
+                    break
+                elif answer.lower() == "n":
+                    sys.exit("Aborting.")
+            except KeyboardInterrupt:
+                sys.exit("\nAborting.")
 
 def _check_for_source_match(origin, destination):
     if origin == destination:

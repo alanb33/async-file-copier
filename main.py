@@ -1,3 +1,5 @@
+import time
+
 from pathlib import Path
 from error_checker import validate
 
@@ -19,46 +21,61 @@ def _create_destination_filepath(destination_folder, file):
     filepath = Path(file)
 
     # Slice out the origin folder name
-    relative_filepath = dest / filepath.with_segments(*filepath.parts[1:])
+    relative_filepath = dest / _path_minus_parent(filepath)
     
     # Return the absolute path for completeness in file operations
     return relative_filepath.absolute()
 
+def _path_minus_parent(filepath):
+    return Path(filepath).with_segments(*Path(filepath).parts[1:])
+
 def copy_files(origin_file_list, destination_folder, destination_file_list):
 
-    copy_all = False
+    _copy_all = False
+    _any_copy = False
 
     for file in origin_file_list:
-        copy_file = True
-        cancel_copy = False
+        _copy_file = True
+        _cancel_copy = False
         for existing_file in destination_file_list:
             if Path(file).name == Path(existing_file).name:
-                if not copy_all:
+                if not _copy_all:
                     while True:
-                        answer = input(f"Destination folder already has the file {file.name}, overwrite? ([y]es/[n]o/[a]ll/[c]ancel): ")
-                        match answer.lower():
-                            case "y":
-                                break
-                            case "n":
-                                copy_file = False
-                                break
-                            case "a":
-                                copy_all = True
-                                break
-                            case "c":
-                                cancel_copy = True
-                                break
+                        try:
+                            answer = input(f"Destination folder already has the file {_path_minus_parent(existing_file)}, overwrite? ([y]es/[n]o/[a]ll/[c]ancel): ")
+                            match answer.lower():
+                                case "y":
+                                    break
+                                case "n":
+                                    _copy_file = False
+                                    break
+                                case "a":
+                                    _copy_all = True
+                                    break
+                                case "c":
+                                    _cancel_copy = True
+                                    break
+                        except KeyboardInterrupt:
+                            _cancel_copy = True
+                            break
         
-        if cancel_copy:
+        # Break out of the outer loop here.
+        if _cancel_copy:
             print("Canceled copy operation.")
             break
 
-        if copy_file:
+        # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
+        if _copy_file:
             destination_filename = _create_destination_filepath(destination_folder, file)
+            print(f"Copying file {Path(destination_filename).name}... ", end="")
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
             destination_filename.write_bytes(file.read_bytes())
+            if not _any_copy:
+                _any_copy = True
+            print("Done.")
 
-    print("Copy operation completed.")
+    if _any_copy:
+        print("Copy operation completed.")
 
 def main():
     origin, destination = validate()
