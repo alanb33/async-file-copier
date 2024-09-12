@@ -17,7 +17,6 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
     copy_all = False
 
     for file in origin_file_list:
-        print("File to copy: " + str(file))
         copy_file = True
         cancel_copy = False
         for existing_file in destination_file_list:
@@ -42,8 +41,6 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
             break
         if copy_file:
             destination_filename = (Path(destination_folder) / Path(file).with_segments(*Path(file).parts[1:])).absolute()
-            #destination_filename = (Path(destination_folder) / Path(file)).absolute()
-            print(f"Program would attempt to write {str(destination_filename)}, pulled from {file.name}")
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
             destination_filename.write_bytes(file.read_bytes())
 
@@ -54,9 +51,6 @@ def main():
 
     origin_files = iterate_directory([], origin)
     destination_files = iterate_directory([], destination)
-
-    print("Origin: " + str(origin_files))
-    print("Destination: " + str(destination_files))
 
     copy_files(origin_files, destination, destination_files)
 
