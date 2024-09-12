@@ -12,6 +12,18 @@ def iterate_directory(file_list, directory):
                     file_list.append(new_file)
     return file_list
 
+def _create_destination_filepath(destination_folder, file):
+    
+    # Convert to Path objects
+    dest = Path(destination_folder)
+    filepath = Path(file)
+
+    # Slice out the origin folder name
+    relative_filepath = dest / filepath.with_segments(*filepath.parts[1:])
+    
+    # Return the absolute path for completeness in file operations
+    return relative_filepath.absolute()
+
 def copy_files(origin_file_list, destination_folder, destination_file_list):
 
     copy_all = False
@@ -36,11 +48,13 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
                             case "c":
                                 cancel_copy = True
                                 break
+        
         if cancel_copy:
             print("Canceled copy operation.")
             break
+
         if copy_file:
-            destination_filename = (Path(destination_folder) / Path(file).with_segments(*Path(file).parts[1:])).absolute()
+            destination_filename = _create_destination_filepath(destination_folder, file)
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
             destination_filename.write_bytes(file.read_bytes())
 
