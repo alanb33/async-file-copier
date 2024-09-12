@@ -1,7 +1,8 @@
-import time
-
+import asyncio
 from pathlib import Path
 from error_checker import validate
+
+import aiofiles
 
 def iterate_directory(file_list, directory):
     for file in Path(directory).iterdir():
@@ -29,7 +30,17 @@ def _create_destination_filepath(destination_folder, file):
 def _path_minus_parent(filepath):
     return Path(filepath).with_segments(*Path(filepath).parts[1:])
 
-def copy_files(origin_file_list, destination_folder, destination_file_list):
+async def async_copy(destination_filename, file_to_copy):
+
+    contents = ""
+
+    async with aiofiles.open(file_to_copy, mode="rb") as f:
+        contents = await f.read()
+    
+    async with aiofiles.open(destination_filename, mode="w+b") as f:
+        await f.write(contents)
+
+async def copy_files(origin_file_list, destination_folder, destination_file_list):
 
     _copy_all = False
     _any_copy = False
@@ -73,7 +84,11 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
             print(f"Copying file {Path(destination_filename).name}... ", end="")
             
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
-            destination_filename.write_bytes(file.read_bytes())
+
+            await async_copy(destination_filename, file)
+
+            # Synchronous write
+            # destination_filename.write_bytes(file.read_bytes())
             if not _any_copy:
                 _any_copy = True
 
@@ -88,7 +103,7 @@ def main():
     origin_files = iterate_directory([], origin)
     destination_files = iterate_directory([], destination)
 
-    copy_files(origin_files, destination, destination_files)
+    asyncio.run(copy_files(origin_files, destination, destination_files))
 
 if __name__ == "__main__":
     main()
