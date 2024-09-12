@@ -35,8 +35,10 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
     _any_copy = False
 
     for file in origin_file_list:
+
         _copy_file = True
         _cancel_copy = False
+        
         for existing_file in destination_file_list:
             if Path(file).name == Path(existing_file).name:
                 if not _copy_all:
@@ -67,11 +69,14 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
         # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
         if _copy_file:
             destination_filename = _create_destination_filepath(destination_folder, file)
+            
             print(f"Copying file {Path(destination_filename).name}... ", end="")
+            
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
             destination_filename.write_bytes(file.read_bytes())
             if not _any_copy:
                 _any_copy = True
+
             print("Done.")
 
     if _any_copy:
