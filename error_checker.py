@@ -45,4 +45,4 @@ def validate():
     origin, destination = _get_sources()
     _validate_sources(origin, destination)
     _check_for_errors(origin, destination)
-    return True
+    return (origin, destination)
