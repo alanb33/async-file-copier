@@ -44,12 +44,8 @@ def copy_files(origin_file_list, destination_folder, destination_file_list):
             destination_filename = (Path(destination_folder) / Path(file).with_segments(*Path(file).parts[1:])).absolute()
             #destination_filename = (Path(destination_folder) / Path(file)).absolute()
             print(f"Program would attempt to write {str(destination_filename)}, pulled from {file.name}")
-            file_data = ""
-            with open(file, "rb") as f:
-                file_data = f.read()
             destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
-            with open(destination_filename, "w+b") as df:
-                df.write(file_data)
+            destination_filename.write_bytes(file.read_bytes())
 
     print("Copy operation completed.")
 
