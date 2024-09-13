@@ -1,0 +1,2 @@
+Asynchronous file copying utilizing Tin Tvrtkovic's aiofiles library (https://github.com/Tinche/aiofiles)
+Copyright 2024 Alan Bailey
