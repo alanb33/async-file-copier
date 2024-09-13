@@ -5,15 +5,19 @@ from error_checker import validate
 import aiofiles
 
 def iterate_directory(file_list, directory):
+    
+    files = file_list.copy()
+    
     for file in Path(directory).iterdir():
         if file.is_file():
-            file_list.append(file)
+            files.append(file)
         elif file.is_dir():
             new_files = iterate_directory(file_list, file)
             for new_file in new_files:
-                if new_file not in file_list:
-                    file_list.append(new_file)
-    return file_list
+                if new_file not in files:
+                    files.append(new_file)
+    
+    return files
 
 def _create_destination_filepath(destination_folder, file):
     
@@ -34,7 +38,6 @@ async def async_copy(file_to_copy, destination_folder):
 
     destination_filename = _create_destination_filepath(destination_folder, file_to_copy)
     
-        
     # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
     destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
 
@@ -44,13 +47,14 @@ async def async_copy(file_to_copy, destination_folder):
         contents = await f.read()
     
     async with aiofiles.open(destination_filename, mode="w+b") as f:
-        print(f"Copying file {Path(destination_filename).name}... ", end="")
+        filename = Path(destination_filename).name
+        print(f"Copying file {filename}... ")
         await f.write(contents)
-        print("Done!")
+        print(f"Finished copying file {filename}.")
 
-def _get_file_copy_list(origin_file_list, destination_file_list, destination_folder):
+def _get_file_copy_list(origin_file_list, destination_file_list):
 
-    files_to_copy = []
+    files_to_copy = origin_file_list.copy()
     _copy_all = False
 
     for file in origin_file_list:
@@ -65,13 +69,12 @@ def _get_file_copy_list(origin_file_list, destination_file_list, destination_fol
                             answer = input(f"Destination folder already has the file {_path_minus_parent(existing_file)}, overwrite? ([y]es/[n]o/[a]ll/[c]ancel): ")
                             match answer.lower():
                                 case "y":
-                                    files_to_copy.append(file)
                                     break
                                 case "n":
+                                    files_to_copy.remove(file)
                                     break
                                 case "a":
                                     _copy_all = True
-                                    files_to_copy.append(file)
                                     break
                                 case "c":
                                     _cancel_copy = True
@@ -92,7 +95,11 @@ def _get_file_copy_list(origin_file_list, destination_file_list, destination_fol
 
 async def copy_files(origin_file_list, destination_folder, destination_file_list):
 
-    files_to_copy = _get_file_copy_list(origin_file_list, destination_file_list, destination_folder)
+    print("Copy files: Origin file list is " + str(origin_file_list))
+
+    files_to_copy = _get_file_copy_list(origin_file_list, destination_file_list)
+
+    print("Files to copy are: " + str(files_to_copy))
     
     if len(files_to_copy) > 0:
 
@@ -106,6 +113,7 @@ def main():
     origin, destination = validate()
 
     origin_files = iterate_directory([], origin)
+    print("Origin files: " + str(origin_files))
     destination_files = iterate_directory([], destination)
 
     asyncio.run(copy_files(origin_files, destination, destination_files))
