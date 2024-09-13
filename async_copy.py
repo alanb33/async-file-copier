@@ -1,43 +1,63 @@
+"""Asynchrous File Copier
+
+This program allows the user to specify an origin folder and a destination
+folder. If the folders are valid by the program (not the same folder, not a
+reserved folder, etc) then the program will attempt an asynchronous file copy
+from the origin folder to the destination folder.
+
+The program will prompt for if the destination folder is not empty and will
+prompt about any duplications it finds. The program only checks if the
+filename is the same.
+
+USAGE: async_copy.py <origin folder> <destination folder>
+"""
+
 import asyncio
 from pathlib import Path
-from error_checker import validate
 
 import aiofiles
 
-def iterate_directory(file_list, directory):
+from error_checker import validate
+
+def iterate_directory(directory, file_list=()):
+    """
+    This recursive function will iterate through a directory and return a
+    list of files. If it encounters a deeper directory, it will recurse until
+    it can proceed no longer.
     
-    files = file_list.copy()
-    
+    Keyword arguments:
+    file_list -- list of files for checks for if they exist. (default ())
+    """
+
+    files = list(file_list)
     for file in Path(directory).iterdir():
         if file.is_file():
             files.append(file)
         elif file.is_dir():
-            new_files = iterate_directory(file_list, file)
+            new_files = iterate_directory(file, file_list)
             for new_file in new_files:
                 if new_file not in files:
                     files.append(new_file)
-    
     return files
 
 def _create_destination_filepath(destination_folder, file):
-    
-    # Convert to Path objects
     dest = Path(destination_folder)
     filepath = Path(file)
 
     # Slice out the origin folder name
     relative_filepath = dest / _path_minus_parent(filepath)
-    
-    # Return the absolute path for completeness in file operations
     return relative_filepath.absolute()
 
 def _path_minus_parent(filepath):
     return Path(filepath).with_segments(*Path(filepath).parts[1:])
 
 async def async_copy(file_to_copy, destination_folder):
+    """
+    Given a string filepath file_to_copy, asynchronously copy it to the
+    string destination_folder.
+    """
 
     destination_filename = _create_destination_filepath(destination_folder, file_to_copy)
-    
     # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
     destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
 
@@ -45,28 +65,28 @@ async def async_copy(file_to_copy, destination_folder):
 
     async with aiofiles.open(file_to_copy, mode="rb") as f:
         contents = await f.read()
-    
     async with aiofiles.open(destination_filename, mode="w+b") as f:
         filename = Path(destination_filename).name
         print(f"Copying file {filename}... ")
         await f.write(contents)
         print(f"Finished copying file {filename}.")
 
+def _ask_overwrite(existing_file):
+    return input(f"Destination file {_path_minus_parent(existing_file)} exists, overwrite?"
+                 + "([y]es/[n]o/[a]ll/[c]ancel): ")
+
 def _get_file_copy_list(origin_file_list, destination_file_list):
 
-    files_to_copy = origin_file_list.copy()
+    files_to_copy = list(origin_file_list).copy()
     _copy_all = False
-
     for file in origin_file_list:
-
         _cancel_copy = False
-        
         for existing_file in destination_file_list:
             if Path(file).name == Path(existing_file).name:
                 if not _copy_all:
                     while True:
                         try:
-                            answer = input(f"Destination folder already has the file {_path_minus_parent(existing_file)}, overwrite? ([y]es/[n]o/[a]ll/[c]ancel): ")
+                            answer = _ask_overwrite(existing_file)
                             match answer.lower():
                                 case "y":
                                     break
@@ -82,9 +102,8 @@ def _get_file_copy_list(origin_file_list, destination_file_list):
                         except KeyboardInterrupt:
                             _cancel_copy = True
                             break
-                if _copy_all:
+                else:
                     files_to_copy.append(file)
-        
         # Break out of the outer loop here.
         if _cancel_copy:
             print("Canceled copy operation.")
@@ -93,14 +112,9 @@ def _get_file_copy_list(origin_file_list, destination_file_list):
 
     return files_to_copy
 
-async def copy_files(origin_file_list, destination_folder, destination_file_list):
-
-    print("Copy files: Origin file list is " + str(origin_file_list))
+async def _copy_files(origin_file_list, destination_folder, destination_file_list):
 
     files_to_copy = _get_file_copy_list(origin_file_list, destination_file_list)
-
-    print("Files to copy are: " + str(files_to_copy))
-    
     if len(files_to_copy) > 0:
 
         async with asyncio.TaskGroup() as tg:
@@ -110,13 +124,20 @@ async def copy_files(origin_file_list, destination_folder, destination_file_list
         print("Copy operation completed.")
 
 def main():
+    """
+    Validate the origin and destination arguments, generate a list of files,
+    and then run the copy operation.
+    """
+
+    # Validation and error checking from error_checker.validate()
     origin, destination = validate()
 
-    origin_files = iterate_directory([], origin)
-    print("Origin files: " + str(origin_files))
-    destination_files = iterate_directory([], destination)
+    # Create the lists of files.
+    origin_files = iterate_directory(origin)
+    destination_files = iterate_directory(destination)
 
-    asyncio.run(copy_files(origin_files, destination, destination_files))
+    # Run the copy operation!
+    asyncio.run(_copy_files(origin_files, destination, destination_files))
 
 if __name__ == "__main__":
     main()
