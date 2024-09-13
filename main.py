@@ -30,7 +30,13 @@ def _create_destination_filepath(destination_folder, file):
 def _path_minus_parent(filepath):
     return Path(filepath).with_segments(*Path(filepath).parts[1:])
 
-async def async_copy(destination_filename, file_to_copy):
+async def async_copy(file_to_copy, destination_folder):
+
+    destination_filename = _create_destination_filepath(destination_folder, file_to_copy)
+    
+        
+    # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
+    destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
 
     contents = ""
 
@@ -38,16 +44,17 @@ async def async_copy(destination_filename, file_to_copy):
         contents = await f.read()
     
     async with aiofiles.open(destination_filename, mode="w+b") as f:
+        print(f"Copying file {Path(destination_filename).name}... ", end="")
         await f.write(contents)
+        print("Done!")
 
-async def copy_files(origin_file_list, destination_folder, destination_file_list):
+def _get_file_copy_list(origin_file_list, destination_file_list, destination_folder):
 
+    files_to_copy = []
     _copy_all = False
-    _any_copy = False
 
     for file in origin_file_list:
 
-        _copy_file = True
         _cancel_copy = False
         
         for existing_file in destination_file_list:
@@ -58,12 +65,13 @@ async def copy_files(origin_file_list, destination_folder, destination_file_list
                             answer = input(f"Destination folder already has the file {_path_minus_parent(existing_file)}, overwrite? ([y]es/[n]o/[a]ll/[c]ancel): ")
                             match answer.lower():
                                 case "y":
+                                    files_to_copy.append(file)
                                     break
                                 case "n":
-                                    _copy_file = False
                                     break
                                 case "a":
                                     _copy_all = True
+                                    files_to_copy.append(file)
                                     break
                                 case "c":
                                     _cancel_copy = True
@@ -71,30 +79,27 @@ async def copy_files(origin_file_list, destination_folder, destination_file_list
                         except KeyboardInterrupt:
                             _cancel_copy = True
                             break
+                if _copy_all:
+                    files_to_copy.append(file)
         
         # Break out of the outer loop here.
         if _cancel_copy:
             print("Canceled copy operation.")
+            files_to_copy = []
             break
 
-        # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
-        if _copy_file:
-            destination_filename = _create_destination_filepath(destination_folder, file)
-            
-            print(f"Copying file {Path(destination_filename).name}... ", end="")
-            
-            destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
+    return files_to_copy
 
-            await async_copy(destination_filename, file)
+async def copy_files(origin_file_list, destination_folder, destination_file_list):
 
-            # Synchronous write
-            # destination_filename.write_bytes(file.read_bytes())
-            if not _any_copy:
-                _any_copy = True
+    files_to_copy = _get_file_copy_list(origin_file_list, destination_file_list, destination_folder)
+    
+    if len(files_to_copy) > 0:
 
-            print("Done.")
+        async with asyncio.TaskGroup() as tg:
+            for file in files_to_copy:
+                tg.create_task(async_copy(file, destination_folder))
 
-    if _any_copy:
         print("Copy operation completed.")
 
 def main():
