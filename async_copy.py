@@ -58,8 +58,8 @@ async def async_copy(file_to_copy, destination_folder):
     """
 
     destination_filename = _create_destination_filepath(destination_folder, file_to_copy)
-    # TODO: Research modes; 0o777 may be too permissive. Can I get the original permissions?
-    destination_filename.parent.mkdir(mode=0o777, parents=True, exist_ok=True)
+    filemode = destination_filename.parent.stat().st_mode
+    destination_filename.parent.mkdir(mode=filemode, parents=True, exist_ok=True)
 
     contents = ""
 
