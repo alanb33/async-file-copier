@@ -10,6 +10,7 @@ authors = [
 description = "Asyncronous file copier program utilize the aiofiles library."
 readme = "README.md"
 license = {file = "LICENSE"}
+keywords = ["asyncio", "file", "copy", "aiofiles"]
 classifiers = [
 	"Development Status :: 3 - Alpha",
 	"Intended Audience :: Developers",
