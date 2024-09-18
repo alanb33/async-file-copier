@@ -1,0 +1,23 @@
+[project]
+name = "async-file-copier"
+version = "0.1.0"
+dependencies = [
+	"aiofiles",
+]
+authors = [
+	{name = "Alan Bailey", email = "ab33@protonmail.com"},
+]
+description = "Asyncronous file copier program utilize the aiofiles library."
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: Apache Software License",
+	"Natural Language :: English",
+	"Programming Language :: Python",
+	"Topic :: System :: Filesystems",
+]
+
+[project.urls]
+Repository = "https://github.com/alanb33/async-file-copier"
