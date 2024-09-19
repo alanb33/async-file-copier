@@ -102,8 +102,6 @@ def _get_file_copy_list(origin_file_list, destination_file_list):
                         except KeyboardInterrupt:
                             _cancel_copy = True
                             break
-                else:
-                    files_to_copy.append(file)
         # Break out of the outer loop here.
         if _cancel_copy:
             print("Canceled copy operation.")
