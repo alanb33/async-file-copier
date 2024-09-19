@@ -77,7 +77,7 @@ def _ask_overwrite(existing_file):
 
 def _get_file_copy_list(origin_file_list, destination_file_list):
 
-    files_to_copy = list(origin_file_list).copy()
+    files_to_copy = [file for file in origin_file_list]
     _copy_all = False
     for file in origin_file_list:
         _cancel_copy = False
